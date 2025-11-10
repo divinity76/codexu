@@ -2,7 +2,8 @@
 
 Utility that keeps your Codex CLI aligned with the latest release every time it
 runs. It checks the locally installed version, compares it to GitHub's current
-release, updates if necessary, then launches Codex.
+release, updates if necessary, then launches Codex. **codexu assumes Codex CLI is
+already installed**—it will not install Codex for you.
 
 ## Supported installs / platforms
 
