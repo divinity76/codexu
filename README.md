@@ -1,7 +1,8 @@
 # codexu
 
-codex-cli auto-updater script, drop-in replacement for "codex" command,
-running a fast update-check before launching codex itself.
+codex-cli auto-updater script, drop-in replacement for `codex` that runs a quick
+update check before launching the CLI. It only installs the latest stable
+release (skipping prerelease tags like `0.57.0-alpha.2`).
 
 ## Supported installs / platforms
 
