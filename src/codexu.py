@@ -36,6 +36,7 @@ ARCH_KEYWORDS = {
     "arm64": ("arm64", "aarch64"),
 }
 NON_CLI_KEYWORDS = ("responses", "proxy", "sdk", "npm")
+MAX_DEBUG_FILE_LIST = 40
 TAR_SUFFIX_PATTERNS = (
     (".tar", ".gz"),
     (".tar", ".xz"),
@@ -208,17 +209,21 @@ def install_custom_release(release: ReleaseInfo) -> None:
         download_file(download_url, archive_path)
 
         extracted_root = extract_archive(archive_path, tmpdir)
-        binary_candidate: Path | None
+        debug_listing: list[str] = []
         if extracted_root.is_dir():
-            binary_candidate = locate_codex_binary(extracted_root)
+            binary_candidate, debug_listing = locate_codex_binary(extracted_root)
         elif is_codex_binary_name(extracted_root.name):
             binary_candidate = extracted_root
+            debug_listing = [extracted_root.name]
         else:
             binary_candidate = None
+            debug_listing = _list_directory_contents(extracted_root.parent)
 
         if binary_candidate is None:
+            listing = ", ".join(debug_listing[:MAX_DEBUG_FILE_LIST]) or "<empty>"
             raise CodexUError(
-                "Unable to locate Codex executable inside downloaded artifact."
+                "Unable to locate Codex executable inside downloaded artifact. "
+                f"Files inspected: {listing}"
             )
 
         stage_and_replace_binary(binary_candidate, codex_path)
@@ -269,25 +274,43 @@ def extract_archive(archive_path: Path, temp_dir: Path) -> Path:
     return archive_path
 
 
-def locate_codex_binary(root: Path) -> Path | None:
+def locate_codex_binary(root: Path) -> tuple[Path | None, list[str]]:
     """Search for a codex executable inside the extracted directory."""
-    if root.is_file() and is_codex_binary_name(root.name):
-        return root
+    inspected: list[str] = []
+    if root.is_file():
+        inspected.append(root.name)
+        return (root if is_codex_binary_name(root.name) else None, inspected)
 
     candidates: list[Path] = []
     for path in root.rglob("*"):
-        if path.is_file() and is_codex_binary_name(path.name):
+        if not path.is_file():
+            continue
+        rel = path.relative_to(root)
+        if len(inspected) < MAX_DEBUG_FILE_LIST:
+            inspected.append(str(rel))
+        if is_codex_binary_name(path.name):
             candidates.append(path)
 
     if not candidates:
-        return None
+        return None, inspected
 
     if platform.system().lower().startswith("win"):
         for candidate in candidates:
             if candidate.suffix.lower() == ".exe":
-                return candidate
+                return candidate, inspected
 
-    return candidates[0]
+    return candidates[0], inspected
+
+
+def _list_directory_contents(directory: Path, limit: int = MAX_DEBUG_FILE_LIST) -> list[str]:
+    if not directory or not directory.exists():
+        return []
+    listing: list[str] = []
+    for entry in sorted(directory.iterdir()):
+        listing.append(entry.name)
+        if len(listing) >= limit:
+            break
+    return listing
 
 
 def stage_and_replace_binary(source_binary: Path, codex_path: Path) -> None:
