@@ -35,7 +35,6 @@ ARCH_KEYWORDS = {
     "x86_64": ("x86_64", "amd64"),
     "arm64": ("arm64", "aarch64"),
 }
-CODEX_FILENAMES = ("codex", "codex.exe")
 NON_CLI_KEYWORDS = ("responses", "proxy", "sdk", "npm")
 TAR_SUFFIX_PATTERNS = (
     (".tar", ".gz"),
@@ -212,7 +211,7 @@ def install_custom_release(release: ReleaseInfo) -> None:
         binary_candidate: Path | None
         if extracted_root.is_dir():
             binary_candidate = locate_codex_binary(extracted_root)
-        elif extracted_root.name.lower() in CODEX_FILENAMES:
+        elif is_codex_binary_name(extracted_root.name):
             binary_candidate = extracted_root
         else:
             binary_candidate = None
@@ -272,12 +271,12 @@ def extract_archive(archive_path: Path, temp_dir: Path) -> Path:
 
 def locate_codex_binary(root: Path) -> Path | None:
     """Search for a codex executable inside the extracted directory."""
-    if root.is_file() and root.name.lower() in CODEX_FILENAMES:
+    if root.is_file() and is_codex_binary_name(root.name):
         return root
 
     candidates: list[Path] = []
     for path in root.rglob("*"):
-        if path.is_file() and path.name.lower() in CODEX_FILENAMES:
+        if path.is_file() and is_codex_binary_name(path.name):
             candidates.append(path)
 
     if not candidates:
@@ -433,6 +432,14 @@ def _choose_best_packaging(assets: list[dict], os_key: str | None) -> dict:
     best_asset = max(assets, key=score)
     return best_asset
 
+
+
+def is_codex_binary_name(name: str) -> bool:
+    lower = name.lower()
+    stripped = lower[:-4] if lower.endswith('.exe') else lower
+    if any(keyword in stripped for keyword in NON_CLI_KEYWORDS):
+        return False
+    return stripped == 'codex' or stripped.startswith('codex-')
 
 
 def normalize_os(raw: str | None) -> str | None:
