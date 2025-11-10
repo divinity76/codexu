@@ -36,6 +36,7 @@ ARCH_KEYWORDS = {
     "arm64": ("arm64", "aarch64"),
 }
 NON_CLI_KEYWORDS = ("responses", "proxy", "sdk", "npm")
+CODEX_COMMAND_CANDIDATES = ("codex", "codex.exe", "codex.cmd", "codex.bat")
 MAX_DEBUG_FILE_LIST = 40
 TAR_SUFFIX_PATTERNS = (
     (".tar", ".gz"),
@@ -78,9 +79,10 @@ def normalize_version(raw: str | None) -> str | None:
 
 def get_installed_version() -> str:
     """Return the locally installed Codex version string."""
+    codex_cmd = resolve_codex_command_path()
     try:
         result = subprocess.run(
-            ["codex", "--version"],
+            [str(codex_cmd), "--version"],
             check=True,
             capture_output=True,
             text=True,
@@ -117,7 +119,8 @@ def get_latest_release_info() -> ReleaseInfo:
 
 def start_codex() -> int:
     """Launch Codex and return its exit code."""
-    return subprocess.call(["codex"])
+    cmd = resolve_codex_command_path()
+    return subprocess.call([str(cmd)])
 
 
 def detect_install_method() -> InstallMethod:
@@ -231,10 +234,15 @@ def install_custom_release(release: ReleaseInfo) -> None:
 
 def get_codex_binary_path() -> Path:
     """Return the filesystem path of the current codex executable."""
-    codex_bin = shutil.which("codex")
-    if not codex_bin:
-        raise CodexUError("codex executable not found in PATH")
-    return Path(codex_bin).resolve()
+    return resolve_codex_command_path()
+
+
+def resolve_codex_command_path() -> Path:
+    for candidate in CODEX_COMMAND_CANDIDATES:
+        resolved = shutil.which(candidate)
+        if resolved:
+            return Path(resolved).resolve()
+    raise CodexUError("codex executable not found in PATH")
 
 
 def download_file(url: str, dest: Path) -> None:
