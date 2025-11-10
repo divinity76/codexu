@@ -37,6 +37,8 @@ ARCH_KEYWORDS = {
 }
 NON_CLI_KEYWORDS = ("responses", "proxy", "sdk", "npm")
 CODEX_COMMAND_CANDIDATES = ("codex", "codex.exe", "codex.cmd", "codex.bat")
+NPM_COMMAND_CANDIDATES = ("npm.cmd", "npm.exe", "npm")
+BREW_COMMAND_CANDIDATES = ("brew", "brew.exe")
 MAX_DEBUG_FILE_LIST = 40
 TAR_SUFFIX_PATTERNS = (
     (".tar", ".gz"),
@@ -134,11 +136,12 @@ def detect_install_method() -> InstallMethod:
 
 def _is_homebrew_install() -> bool:
     """Return True if Codex appears to be installed via Homebrew."""
-    if shutil.which("brew") is None:
+    brew_cmd = _resolve_command(BREW_COMMAND_CANDIDATES)
+    if not brew_cmd:
         return False
 
     result = subprocess.run(
-        ["brew", "list", "--cask", "codex"],
+        [str(brew_cmd), "list", "--cask", "codex"],
         capture_output=True,
         text=True,
     )
@@ -147,11 +150,12 @@ def _is_homebrew_install() -> bool:
 
 def _is_npm_install() -> bool:
     """Return True if Codex appears to be installed via npm."""
-    if shutil.which("npm") is None:
+    npm_cmd = _resolve_command(NPM_COMMAND_CANDIDATES)
+    if not npm_cmd:
         return False
 
     result = subprocess.run(
-        ["npm", "list", "-g", "@openai/codex", "--depth=0"],
+        [str(npm_cmd), "list", "-g", "@openai/codex", "--depth=0"],
         capture_output=True,
         text=True,
     )
@@ -178,11 +182,17 @@ def update_codex(installed: str, release: ReleaseInfo) -> None:
     )
 
     if method is InstallMethod.HOME_BREW:
-        run_command(["brew", "upgrade", "--cask", "codex"])
+        brew_cmd = _resolve_command(BREW_COMMAND_CANDIDATES)
+        if not brew_cmd:
+            raise CodexUError("Homebrew installation detected but 'brew' command not found")
+        run_command([str(brew_cmd), "upgrade", "--cask", "codex"])
         return
 
     if method is InstallMethod.NPM:
-        run_command(["npm", "update", "-g", "@openai/codex"])
+        npm_cmd = _resolve_command(NPM_COMMAND_CANDIDATES)
+        if not npm_cmd:
+            raise CodexUError("npm installation detected but 'npm' command not found")
+        run_command([str(npm_cmd), "update", "-g", "@openai/codex"])
         return
 
     install_custom_release(release)
@@ -238,11 +248,18 @@ def get_codex_binary_path() -> Path:
 
 
 def resolve_codex_command_path() -> Path:
-    for candidate in CODEX_COMMAND_CANDIDATES:
+    resolved = _resolve_command(CODEX_COMMAND_CANDIDATES)
+    if resolved:
+        return resolved
+    raise CodexUError("codex executable not found in PATH")
+
+
+def _resolve_command(candidates: tuple[str, ...]) -> Path | None:
+    for candidate in candidates:
         resolved = shutil.which(candidate)
         if resolved:
             return Path(resolved).resolve()
-    raise CodexUError("codex executable not found in PATH")
+    return None
 
 
 def download_file(url: str, dest: Path) -> None:
