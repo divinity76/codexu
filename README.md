@@ -1,9 +1,7 @@
 # codexu
 
-Utility that keeps your Codex CLI aligned with the latest release every time it
-runs. It checks the locally installed version, compares it to GitHub's current
-release, updates if necessary, then launches Codex. **codexu assumes Codex CLI is
-already installed**—it will not install Codex for you.
+codex-cli auto-updater script, drop-in replacement for "codex" command,
+dock a fast update-check before launching codex itself.
 
 ## Supported installs / platforms
 
@@ -12,7 +10,7 @@ already installed**—it will not install Codex for you.
 - Custom installs on Linux, macOS, or Windows (downloads the correct artifact
   and replaces the existing binary automatically)
 
-## Quick install
+## Installation
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/divinity76/codexu/refs/heads/main/src/install.py | python -
@@ -20,11 +18,3 @@ curl -fsSL https://raw.githubusercontent.com/divinity76/codexu/refs/heads/main/s
 
 The installer drops `codexu` (or `codexu.py`/`codexu.bat` on Windows) next to
 your existing `codex` binary so you can invoke it directly.
-
-## Manual usage
-
-Clone the repo and run the updater script:
-
-```sh
-python src/codexu.py
-```
