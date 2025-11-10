@@ -36,6 +36,7 @@ ARCH_KEYWORDS = {
     "arm64": ("arm64", "aarch64"),
 }
 CODEX_FILENAMES = ("codex", "codex.exe")
+NON_CLI_KEYWORDS = ("responses", "proxy", "sdk", "npm")
 TAR_SUFFIX_PATTERNS = (
     (".tar", ".gz"),
     (".tar", ".xz"),
@@ -357,22 +358,81 @@ def select_asset_for_current_platform(assets: list[dict]) -> dict | None:
     os_key = normalize_os(platform.system())
     arch_key = normalize_arch(platform.machine())
 
-    def matches(entry: dict) -> bool:
-        name = entry.get("name", "").lower()
-        if os_key and not any(
-            keyword in name for keyword in OS_KEYWORDS.get(os_key, ())
-        ):
-            return False
-        if arch_key and not any(
-            keyword in name for keyword in ARCH_KEYWORDS.get(arch_key, ())
-        ):
-            return False
-        return True
+    filtered_assets = _filter_cli_assets(assets)
+    candidate_groups = [
+        _filter_by_os_and_arch(filtered_assets, os_key, arch_key),
+        _filter_by_os_and_arch(assets, os_key, arch_key),
+        _filter_by_os(filtered_assets, os_key),
+        _filter_by_os(assets, os_key),
+        filtered_assets,
+        assets,
+    ]
 
+    for group in candidate_groups:
+        if group:
+            return _choose_best_packaging(group, os_key)
+    return None
+
+
+def _filter_cli_assets(assets: list[dict]) -> list[dict]:
+    result: list[dict] = []
     for asset in assets:
-        if matches(asset):
-            return asset
-    return assets[0] if assets else None
+        name = asset.get("name", "").lower()
+        if not name:
+            continue
+        if any(keyword in name for keyword in NON_CLI_KEYWORDS):
+            continue
+        result.append(asset)
+    return result
+
+
+def _filter_by_os_and_arch(
+    assets: list[dict], os_key: str | None, arch_key: str | None
+) -> list[dict]:
+    return [
+        asset
+        for asset in assets
+        if _matches_os(asset, os_key) and _matches_arch(asset, arch_key)
+    ]
+
+
+def _filter_by_os(assets: list[dict], os_key: str | None) -> list[dict]:
+    return [asset for asset in assets if _matches_os(asset, os_key)]
+
+
+def _matches_os(asset: dict, os_key: str | None) -> bool:
+    if not os_key:
+        return True
+    name = asset.get("name", "").lower()
+    return any(keyword in name for keyword in OS_KEYWORDS.get(os_key, ()))
+
+
+def _matches_arch(asset: dict, arch_key: str | None) -> bool:
+    if not arch_key:
+        return True
+    name = asset.get("name", "").lower()
+    return any(keyword in name for keyword in ARCH_KEYWORDS.get(arch_key, ()))
+
+
+def _choose_best_packaging(assets: list[dict], os_key: str | None) -> dict:
+    preferences = {
+        "windows": [".zip", ".tar.gz", ".tar", ".zst"],
+        "darwin": [".tar.gz", ".zip", ".tar", ".zst"],
+        "linux": [".tar.gz", ".tar", ".zst", ".zip"],
+        None: [".zip", ".tar.gz", ".tar", ".zst"],
+    }
+    preferred_order = preferences.get(os_key, preferences[None])
+
+    def score(asset: dict) -> int:
+        name = asset.get("name", "").lower()
+        for idx, ext in enumerate(preferred_order):
+            if name.endswith(ext):
+                return len(preferred_order) - idx
+        return 0
+
+    best_asset = max(assets, key=score)
+    return best_asset
+
 
 
 def normalize_os(raw: str | None) -> str | None:
