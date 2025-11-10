@@ -41,13 +41,13 @@ def main() -> int:
 
 
 def resolve_codex_binary() -> Path:
-    """Return the resolved path to the codex executable."""
+    """Return the path to the codex executable as exposed on PATH."""
     location = shutil.which("codex")
     if not location:
         raise InstallerError(
             "codex executable not found in PATH. Please install codex first."
         )
-    return Path(location).resolve()
+    return Path(location)
 
 
 def download_codexu() -> bytes:
