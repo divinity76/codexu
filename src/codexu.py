@@ -119,10 +119,10 @@ def get_latest_release_info() -> ReleaseInfo:
     return ReleaseInfo(version=version, tag=tag)
 
 
-def start_codex() -> int:
+def start_codex(extra_args: list[str]) -> int:
     """Launch Codex and return its exit code."""
     cmd = resolve_codex_command_path()
-    return subprocess.call([str(cmd)])
+    return subprocess.call([str(cmd), *extra_args])
 
 
 def detect_install_method() -> InstallMethod:
@@ -519,6 +519,7 @@ def normalize_arch(raw: str | None) -> str | None:
 
 
 def main() -> int:
+    passthrough_args = sys.argv[1:]
     try:
         installed_version = get_installed_version()
         release = get_latest_release_info()
@@ -528,7 +529,7 @@ def main() -> int:
 
     if installed_version == release.version:
         print(f"Codex is up to date ({installed_version}). Starting Codex...")
-        return start_codex()
+        return start_codex(passthrough_args)
 
     try:
         update_codex(installed_version, release)
