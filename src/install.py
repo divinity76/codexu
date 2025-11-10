@@ -87,7 +87,20 @@ def install_windows(codexu_bytes: bytes, target_dir: Path) -> None:
 
     batch_contents = (
         "@echo off\r\n"
-        "python3 \"%~dp0codexu.py\" %*\r\n"
+        "setlocal\r\n"
+        "set CODExU_PY=\"%~dp0codexu.py\"\r\n"
+        "where python >nul 2>&1\r\n"
+        "if %errorlevel%==0 (\r\n"
+        "    python %CODExU_PY% %*\r\n"
+        "    goto :eof\r\n"
+        ")\r\n"
+        "where python3 >nul 2>&1\r\n"
+        "if %errorlevel%==0 (\r\n"
+        "    python3 %CODExU_PY% %*\r\n"
+        "    goto :eof\r\n"
+        ")\r\n"
+        "echo Neither python nor python3 was found in PATH.>&2\r\n"
+        "exit /b 1\r\n"
     ).encode("utf-8")
     print(f"Installing launcher batch file to {codexu_bat}")
     stage_atomic_write(codexu_bat, batch_contents)
