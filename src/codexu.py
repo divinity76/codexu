@@ -527,17 +527,19 @@ def main() -> int:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
 
+    starting_message: str
     if installed_version == release.version:
-        print(f"Codex is up to date ({installed_version}). Starting Codex...")
-        return start_codex(passthrough_args)
+        starting_message = f"Codex is up to date ({installed_version}). Starting Codex..."
+    else:
+        try:
+            update_codex(installed_version, release)
+        except CodexUError as exc:
+            print(f"Update failed: {exc}", file=sys.stderr)
+            return 1
+        starting_message = f"Codex updated to {release.version}. Starting Codex..."
 
-    try:
-        update_codex(installed_version, release)
-    except CodexUError as exc:
-        print(f"Update failed: {exc}", file=sys.stderr)
-        return 1
-
-    return 0
+    print(starting_message)
+    return start_codex(passthrough_args)
 
 
 if __name__ == "__main__":
