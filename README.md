@@ -19,3 +19,29 @@ curl -fsSL https://raw.githubusercontent.com/divinity76/codexu/refs/heads/main/s
 
 The installer drops `codexu` (or `codexu.py`/`codexu.bat` on Windows) next to
 your existing `codex` binary so you can invoke it directly.
+
+## Usage
+
+```
+$ codexu
+Codex is up to date (0.57.0). Starting Codex...
+╭─────────────────────────────────────────────────────╮
+│ >_ OpenAI Codex (v0.57.0)                           │
+│                                                     │
+│ model:     gpt-5-codex-mini high   /model to change │
+│ directory: /temp2                                   │
+╰─────────────────────────────────────────────────────╯
+
+  To get started, describe a task or try one of these commands:
+
+  /init - create an AGENTS.md file with instructions for Codex
+  /status - show current session configuration
+  /approvals - choose what Codex can do without approval
+  /model - choose what model and reasoning effort to use
+  /review - review any changes and find issues
+
+ 
+› Explain this codebase
+ 
+  100% context left · ? for shortcuts
+```
