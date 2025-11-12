@@ -24,7 +24,7 @@ LATEST_RELEASE_URL = "https://github.com/openai/codex/releases/latest"
 GITHUB_API_RELEASE_TMPL = (
     "https://api.github.com/repos/openai/codex/releases/tags/{tag}"
 )
-USER_AGENT = "codexu/1.0 (+https://github.com/openai/codex)"
+USER_AGENT = "codexu/1.0 (+https://github.com/divinity76/codexu)"
 
 OS_KEYWORDS = {
     "windows": ("windows", "msvc", "win"),
