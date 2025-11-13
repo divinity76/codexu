@@ -250,7 +250,7 @@ def get_codex_binary_path() -> Path:
 def resolve_codex_command_path() -> Path:
     resolved = _resolve_command(CODEX_COMMAND_CANDIDATES)
     if resolved:
-        return resolved
+        return resolved.resolve()
     raise CodexUError("codex executable not found in PATH")
 
 
@@ -258,7 +258,7 @@ def _resolve_command(candidates: tuple[str, ...]) -> Path | None:
     for candidate in candidates:
         resolved = shutil.which(candidate)
         if resolved:
-            return Path(resolved).resolve()
+            return Path(resolved)
     return None
 
 
