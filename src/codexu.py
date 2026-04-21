@@ -36,6 +36,13 @@ ARCH_KEYWORDS = {
     "arm64": ("arm64", "aarch64"),
 }
 NON_CLI_KEYWORDS = ("responses", "proxy", "sdk", "npm")
+NON_PRIMARY_CLI_KEYWORDS = (
+    "argument-comment-lint",
+    "command-runner",
+    "windows-sandbox-setup",
+    "codex-zsh",
+    "config-schema",
+)
 CODEX_COMMAND_CANDIDATES = ("codex", "codex.exe", "codex.cmd", "codex.bat")
 NPM_COMMAND_CANDIDATES = ("npm.cmd", "npm.exe", "npm")
 BREW_COMMAND_CANDIDATES = ("brew", "brew.exe")
@@ -427,10 +434,28 @@ def _filter_cli_assets(assets: list[dict]) -> list[dict]:
         name = asset.get("name", "").lower()
         if not name:
             continue
-        if any(keyword in name for keyword in NON_CLI_KEYWORDS):
+        if not _is_primary_codex_cli_asset_name(name):
             continue
         result.append(asset)
     return result
+
+
+def _is_primary_codex_cli_asset_name(name: str) -> bool:
+    """Return True when an asset name appears to be the main Codex CLI package."""
+    if not name.startswith("codex"):
+        return False
+
+    if any(keyword in name for keyword in NON_CLI_KEYWORDS):
+        return False
+
+    if any(keyword in name for keyword in NON_PRIMARY_CLI_KEYWORDS):
+        return False
+
+    # Examples that should pass:
+    #   codex
+    #   codex-x86_64-pc-windows-msvc.exe
+    #   codex-x86_64-pc-windows-msvc.exe.zip
+    return name == "codex" or name.startswith("codex-")
 
 
 def _filter_by_os_and_arch(
@@ -463,7 +488,7 @@ def _matches_arch(asset: dict, arch_key: str | None) -> bool:
 
 def _choose_best_packaging(assets: list[dict], os_key: str | None) -> dict:
     preferences = {
-        "windows": [".zip", ".tar.gz", ".tar", ".zst"],
+        "windows": [".exe", ".zip", ".tar.gz", ".tar", ".zst"],
         "darwin": [".tar.gz", ".zip", ".tar", ".zst"],
         "linux": [".tar.gz", ".tar", ".zst", ".zip"],
         None: [".zip", ".tar.gz", ".tar", ".zst"],
